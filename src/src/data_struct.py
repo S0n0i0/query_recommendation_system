@@ -6,12 +6,14 @@ from numpy import NaN
 
 Id = str
 Score = float
+pSeries = pandas.core.series.Series
+pDataFrame = pandas.core.frame.DataFrame
 
 class ReferenceType(Enum):
     USER = 0
     QUERY = 1
 
-class Query(pandas.core.series.Series):
+class Query(pSeries): #Trovare alternativa al subclassing, dato che non dovrebbe essere il massimo per pandas
 
     def __init__(self, query) -> None:
         super().__init__(query)
@@ -30,15 +32,23 @@ class People:
     def __str__(self) -> str:
         return str(self.people)
 
+    def __getattr__(self, attr):
+        return getattr(self.people, attr)
+
     def getFields(self) -> tuple:
         ref = self.people
         return tuple(ref.keys().insert(0,ref.index.name))
 
-    def getPerson(self,id) -> pandas.core.series.Series:
+    def getPerson(self,id) -> pSeries:
         return self.people.loc[id]
 
-    def poseQuery(self, query: Query) -> pandas.core.frame.DataFrame:
-        return self.people.query(str(query))
+    def getColumnSubset(self, columns: list = []) -> pDataFrame:
+        return self.people[columns]
+
+    def poseQuery(self, query: Query | str) -> pDataFrame:
+        """Consider the table structure indexes=people, columns=fields"""
+
+        return self.people.query(query if isinstance(query,str) else str(query))
 
 class Users:
     def __init__(self, csvName: str, sep: str = ",") -> None:
@@ -47,11 +57,19 @@ class Users:
     def __str__(self) -> str:
         return str(self.users)
 
+    def __getattr__(self, attr):
+        return getattr(self.users, attr)
+
     def getUser(self, index: int) -> Id:
         return self.users[index]
 
-    def addUser(self, id: Id) -> None:
-        self.users = pandas.concat([self.users,pandas.Series(id)],ignore_index=True)
+    def concatUser(self, ids: pSeries) -> None:
+        """If you have to append elements in a for loop, use a list and then use this concat method"""
+
+        self.users = pandas.concat([self.users,ids],ignore_index=True)
+    
+    def contains(self, id: Id):
+        return id in self.users.values
 
 class Queries:
     def __init__(self, csvName: str, csvSep: str = ",", keyValueSep: str = "=") -> None: #Controllare se con file grandi questa procedura è troppo lenta
@@ -65,16 +83,29 @@ class Queries:
                     record[key] = value
                 records[splittedLine[0]] = record
 
-        self.queries = pandas.read_json(io.StringIO(json.dumps(records)))
+        self.queries = pandas.read_json(io.StringIO(json.dumps(records)),orient="index")
     
     def __str__(self) -> str:
         return str(self.queries)
 
-    def getQuery(self, id: Id) -> Query:
-        return Query(self.queries[id])
+    def __getattr__(self, attr):
+        return getattr(self.people, attr)
 
-    def addQuery(self, query: Query) -> None:
-        self.queries[query.name] = query.values
+    def getQuery(self, id: Id) -> Query:
+        return Query(self.queries.loc[id])
+
+    def getColumnSubset(self, columns: list = []) -> pDataFrame:
+        return self.queries[columns]
+
+    def concatQueries(self, queries: pDataFrame) -> None:
+        """If you have to append elements in a for loop, use a list and then use this concat method"""
+
+        self.queries = pandas.concat([self.queries,pDataFrame])
+
+    def filterQueries(self, query: Query | str):
+        """Consider the table structure indexes=queries, columns=fields"""
+
+        return self.queries.query(query if isinstance(query,str) else str(query))
 
 class UtilityMatrix:
     def __init__(self, csvName: str, sep: str = ",") -> None:
@@ -83,13 +114,16 @@ class UtilityMatrix:
     def __str__(self) -> str:
         return str(self.um)
 
+    def __getattr__(self, attr):
+        return getattr(self.people, attr)
+
     def getScore(self, queryId: Id, userId: Id) -> Score:
         return self.um[queryId][userId]
         
-    def getQueryScores(self, id: Id) -> pandas.core.series.Series:
+    def getQueryScores(self, id: Id) -> pSeries:
         return self.um[id]
     
-    def getUserScores(self, id: Id) -> pandas.core.series.Series:
+    def getUserScores(self, id: Id) -> pSeries:
         return self.um.loc[id]
 
     def setScore(self, userId: Id, queryId: Id, score: Score) -> None:
@@ -100,3 +134,20 @@ class UtilityMatrix:
 
     def addEmptySeries(self, id: Id) -> bool:
         self.um.loc[id] = [NaN for i in range(self.um.shape[1])]
+
+    def filterUm(self, query: Query | str):
+        """Consider the table structure indexes=queries, columns=fields"""
+
+        return self.um.query(query if isinstance(query,str) else str(query))
+
+    def getScoresGe(self, n: float): #Trovare un modo migliore per eliminare righe e colonne e per passare operatore (unendo gli altri 3 metodi)
+        scores = self.um[self.um.iloc[:] >= n].dropna(0,"all")
+        return scores.dropna(1,"all")
+    
+    def getScoresLe(self, n: float): #Trovare un modo migliore per eliminare righe e colonne
+        scores = self.um[self.um.iloc[:] <= n].dropna(0,"all")
+        return scores.dropna(1,"all")
+    
+    def getScoresEq(self, n: float): #Trovare un modo migliore per eliminare righe e colonne
+        scores = self.um[self.um.iloc[:] == n].dropna(0,"all")
+        return scores.dropna(1,"all")
