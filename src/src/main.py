@@ -1,9 +1,11 @@
 from data_struct import *
 
-a = People("./src/files/people.csv")
-b = Users("./src/files/users.csv")
-c = Queries("./src/files/queries.csv")
-d = UtilityMatrix("./src/files/um.csv")
+baseFilesPath = "."
+
+a = People(baseFilesPath + "/files/people.csv")
+b = Users(baseFilesPath + "/files/users.csv")
+c = Queries(baseFilesPath + "/files/queries.csv")
+d = UtilityMatrix(baseFilesPath + "/files/um.csv")
 
 print(a)
 print(b)
