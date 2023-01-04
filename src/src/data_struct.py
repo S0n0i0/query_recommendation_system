@@ -132,7 +132,7 @@ class UtilityMatrix:
     def addEmptyQuery(self, id: Id) -> bool:
         self.um[id] = [NaN for i in range(self.um.shape[0])]
 
-    def addEmptySeries(self, id: Id) -> bool:
+    def addEmptyUser(self, id: Id) -> bool:
         self.um.loc[id] = [NaN for i in range(self.um.shape[1])]
 
     def filterUm(self, query: Query | str):
