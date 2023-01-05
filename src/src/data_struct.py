@@ -27,7 +27,7 @@ class Query(pSeries): #Trovare alternativa al subclassing, dato che non dovrebbe
 
 class People:
     def __init__(self, csvName: str, sep: str = ",") -> None:
-        self.people = pandas.read_csv(csvName, sep=sep, index_col="id")
+        self.people = pandas.read_csv(csvName, sep=sep, index_col=0)
 
     def __str__(self) -> str:
         return str(self.people)

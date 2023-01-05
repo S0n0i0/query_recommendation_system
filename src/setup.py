@@ -10,5 +10,5 @@ with open("README.txt") as f:
         author='Ribaga and Compri',
         url='https://github.com/S0n0i0/DM22_240180_239953',
         packages=['src'],
-        install_requires=["pandas"], #external packages as dependencies
+        install_requires=["pandas","faker"], #external packages as dependencies
         )
