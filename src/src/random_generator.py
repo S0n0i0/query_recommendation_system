@@ -10,9 +10,9 @@ pdDataFrame = pd.core.frame.DataFrame
 def rndNoChar(fnSource,toReplace: str,value: str = " "):
     return re.sub(toReplace,value,fnSource())
 
-def randomElement(existingSource = pd.DataFrame(), randomSourceFn = None, args: list = [], template: str = None, alsoNaN: bool = False) -> any:
+def randomElement(existingSource = None, randomSourceFn = None, args: list = [], template: str = None, alsoNaN: bool = False) -> any:
     possibilities = []
-    if not existingSource.empty: possibilities.append(0)
+    if existingSource is not None: possibilities.append(0)
     if randomSourceFn != None: possibilities.append(1)
     if alsoNaN: possibilities.append(2)
     
@@ -27,8 +27,8 @@ def randomElement(existingSource = pd.DataFrame(), randomSourceFn = None, args: 
     return res if template == None else template.format(res)
 
 #initialize Faker
-Faker.seed(12345)
 fake = Faker(['it_IT', 'en_US'])
+Faker.seed(12345)
 
 #set the number of users and people
 num_users = 10

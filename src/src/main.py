@@ -2,10 +2,10 @@ from data_struct import *
 
 baseFilesPath = "."
 
-a = People(baseFilesPath + "/files/people.csv")
-b = Users(baseFilesPath + "/files/users.csv")
-c = Queries(baseFilesPath + "/files/queries.csv")
-d = UtilityMatrix(baseFilesPath + "/files/utility_matrix.csv")
+a = People.fromCsv(baseFilesPath + "/files/people.csv")
+b = Users.fromCsv(baseFilesPath + "/files/users.csv")
+c = Queries.fromCsv(baseFilesPath + "/files/queries.csv")
+d = UtilityMatrix.fromCsv(baseFilesPath + "/files/utility_matrix.csv")
 
 print(a)
 print(b)
