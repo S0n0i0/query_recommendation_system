@@ -20,7 +20,7 @@ def randomElement(existingSource = None, randomSourceFn = None, args: list = [],
     
     choice = random.choice(possibilities)
     if not choice:
-        res = existingSource[random.randint(0,existingSource.size)-1]
+        res = existingSource[random.randint(0,existingSource.size-1)]
     elif choice == 1:
         res = randomSourceFn(*args)
     else:
@@ -31,6 +31,7 @@ def randomElement(existingSource = None, randomSourceFn = None, args: list = [],
 #initialize Faker
 fake = Faker(['it_IT', 'en_US'])
 Faker.seed(12345)
+random.seed(12345)
 
 #set the number of users and people
 num_users = 10
@@ -42,15 +43,14 @@ users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
 
 
 #create a dataframe for the people
-people = People(pd.DataFrame({'name': [fake.name() for _ in range(num_people)],
+people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)], #Rimettere 'id' come index in caso si voglia tornare in quel modo
+                        'name': [fake.name() for _ in range(num_people)],
                        'address': [rndNoChar(fake.address,"(\\n|,)") for _ in range(num_people)],
                        'age': [random.randint(10, 90) for _ in range(num_people)],
-                       'occupation': [rndNoChar(fake.job,",") for _ in range(num_people)]},
-                       pd.Index(['p{}'.format(i) for i in range(num_people)],name="id")))
-
+                       'occupation': [rndNoChar(fake.job,",") for _ in range(num_people)]}))
 
 #create a dataframe for the queries
-queries = Queries(pd.DataFrame({'id': [randomElement(people.index,random.randint,[num_queries,num_queries*2],'id={}',True) for _ in range(num_queries)],
+queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'),random.randint,[num_queries,num_queries*2],'id={}',True) for _ in range(num_queries)],
                         'name': [randomElement(people.getColumnSubset('name'),fake.name,[],'name={}',True) for _ in range(num_queries)], 
                         'address': [randomElement(people.getColumnSubset('address'),rndNoChar,[fake.address,"(\\n|,)"],'address={}',True) for _ in range(num_queries)],
                         'age': [randomElement(people.getColumnSubset('age'),random.randint,[10,90],'age={}',True) for _ in range(num_queries)],
@@ -64,18 +64,10 @@ utility_matrix = UtilityMatrix(pd.DataFrame([[randomElement(randomSourceFn=rando
 baseFilesPath = "."
 
 #save the dataframes to CSV files
-people.to_csv(baseFilesPath + "/files/people.csv")
+people.toCsv(baseFilesPath + "/files/people.csv")
 
-users.to_csv(baseFilesPath + "/files/users.csv", header=False, index=False)
+users.toCsv(baseFilesPath + "/files/users.csv")
 
-with open(baseFilesPath + "/files/queries.csv", "w") as f:
-    queryDict = queries.to_dict("index")
-    for i in queryDict:
-        f.write(i)
-        for param in queryDict[i]:
-            if queryDict[i][param] != None:
-                f.write("," + str(queryDict[i][param]))
-        f.write("\n")
+queries.toCsv(baseFilesPath + "/files/queries.csv")
 
-with open(baseFilesPath + "/files/utility_matrix.csv","w",newline='') as f:
-    f.write(utility_matrix.to_csv()[1:])
+utility_matrix.toCsv(baseFilesPath + "/files/utility_matrix.csv")

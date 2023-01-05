@@ -32,8 +32,11 @@ class People:
     @staticmethod
     def fromCsv(csvName: str = "", sep: str = ","):
         people = People()
-        if csvName != "": people.people = pd.read_csv(csvName, sep=sep, index_col=0)
+        if csvName != "": people.people = pd.read_csv(csvName, sep=sep, index_col=False) #Mettere index_col=0 se si vuole tornare con prima riga come index
         return people
+    
+    def toCsv(self, csvName: str = "", sep: str = ","):
+        if csvName != "": self.people.to_csv(csvName, index=False) #Togliere index=False se si vuole tornare con id come index
 
     def __str__(self) -> str:
         return str(self.people)
@@ -43,10 +46,10 @@ class People:
 
     def getFields(self) -> tuple:
         ref = self.people
-        return tuple(ref.keys().insert(0,ref.index.name))
+        return tuple(ref.keys())#.insert(0,ref.index.name))
 
-    def getPerson(self,id) -> pSeries:
-        return self.people.loc[id]
+    '''def getPerson(self,id) -> pSeries:
+        return self.people.loc[id]'''
 
     def getColumnSubset(self, columns: str | list = "") -> pDataFrame:
         return self.people[columns]
@@ -65,6 +68,9 @@ class Users:
         users = Users()
         if csvName != "": users.users = pd.read_csv(csvName, sep=sep, header=None).squeeze()
         return users
+
+    def toCsv(self, csvName: str = "", sep: str = ","):
+        if csvName != "": self.users.to_csv(csvName, header=False, index=False)
 
     def __str__(self) -> str:
         return str(self.users)
@@ -104,6 +110,17 @@ class Queries:
             queries.queries = pd.read_json(io.StringIO(json.dumps(records)),orient="index")
         
         return queries
+
+    def toCsv(self, csvName: str = "", sep: str = ","):
+        if csvName != "":
+            with open(csvName, "w") as f:
+                queryDict = self.queries.to_dict("index")
+                for i in queryDict:
+                    f.write(i)
+                    for param in queryDict[i]:
+                        if queryDict[i][param] != None:
+                            f.write("," + str(queryDict[i][param]))
+                    f.write("\n")
     
     def __str__(self) -> str:
         return str(self.queries)
@@ -136,6 +153,11 @@ class UtilityMatrix:
         utility_matrix = UtilityMatrix()
         if csvName != "": utility_matrix.utility_matrix = pd.read_csv(csvName, sep=sep)
         return utility_matrix
+
+    def toCsv(self, csvName: str = "", sep: str = ","):
+        if csvName != "":
+            with open(csvName,"w",newline='') as f:
+                f.write(self.utility_matrix.to_csv()[1:])
 
     def __str__(self) -> str:
         return str(self.utility_matrix)

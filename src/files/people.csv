@@ -1,11 +1,11 @@
 id,name,address,age,occupation
-p0,Samantha Pratt,Piazza Giannetti  7 20034  San Giorgio Su Legnano (MI),72,Administrator  education
-p1,Debra Graham,Piazza Conti  365 65027  Scafa (PE),41,Clothing/textile technologist
-p2,Jeffrey Hart,Via Amato  13 65125  Pescara Colli (PE),15,Licensed conveyancer
-p3,Paola Fanucci,351 Christopher Expressway Suite 332 West Edward  CO 68607,40,IT consultant
-p4,Morgan Schmidt,Via Cafarchia  278 16129  Genova (GE),71,Financial controller
-p5,Carol Harris,Via Peruzzi  92 Piano 5 48024  Villa Serraglio (RA),18,Radio producer
-p6,Massimiliano Milanesi,283 Bradley Crossroad West Kimberlyton  MN 68224,26,Technical sales engineer
-p7,Irma Babati,Canale Barberini  787 20088  Gudo Visconti (MI),78,Futures trader
-p8,Todd Harrell,0352 Erica Road Apt. 019 Port Randy  HI 36234,88,Designer  interior/spatial
-p9,Cirillo Porzio-Camuccini,561 Richardson Way Apt. 632 East Lisabury  MA 56113,76,Applications developer
+p0,Samantha Pratt,Piazza Giannetti  7 20034  San Giorgio Su Legnano (MI),63,Administrator  education
+p1,Debra Graham,Piazza Conti  365 65027  Scafa (PE),11,Clothing/textile technologist
+p2,Jeffrey Hart,Via Amato  13 65125  Pescara Colli (PE),48,Licensed conveyancer
+p3,Paola Fanucci,351 Christopher Expressway Suite 332 West Edward  CO 68607,57,IT consultant
+p4,Morgan Schmidt,Via Cafarchia  278 16129  Genova (GE),34,Financial controller
+p5,Carol Harris,Via Peruzzi  92 Piano 5 48024  Villa Serraglio (RA),44,Radio producer
+p6,Massimiliano Milanesi,283 Bradley Crossroad West Kimberlyton  MN 68224,82,Technical sales engineer
+p7,Irma Babati,Canale Barberini  787 20088  Gudo Visconti (MI),65,Futures trader
+p8,Todd Harrell,0352 Erica Road Apt. 019 Port Randy  HI 36234,30,Designer  interior/spatial
+p9,Cirillo Porzio-Camuccini,561 Richardson Way Apt. 632 East Lisabury  MA 56113,57,Applications developer
