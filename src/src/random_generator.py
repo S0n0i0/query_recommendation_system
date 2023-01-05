@@ -1,3 +1,5 @@
+from data_struct import *
+
 import pandas as pd
 import random
 from faker import Faker
@@ -36,28 +38,28 @@ num_people = 10
 num_queries = 10
 
 #create a dataframe for the users
-users = pd.DataFrame(['u{}'.format(i) for i in range(num_users)])
+users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
 
 
 #create a dataframe for the people
-people = pd.DataFrame({'name': [fake.name() for _ in range(num_people)],
+people = People(pd.DataFrame({'name': [fake.name() for _ in range(num_people)],
                        'address': [rndNoChar(fake.address,"(\\n|,)") for _ in range(num_people)],
                        'age': [random.randint(10, 90) for _ in range(num_people)],
                        'occupation': [rndNoChar(fake.job,",") for _ in range(num_people)]},
-                       pd.Index(['p{}'.format(i) for i in range(num_people)],name="id"))
+                       pd.Index(['p{}'.format(i) for i in range(num_people)],name="id")))
 
 
 #create a dataframe for the queries
-queries = pd.DataFrame({'id': [randomElement(people.index,random.randint,[num_queries,num_queries*2],'id={}',True) for _ in range(num_queries)],
-                        'name': [randomElement(people['name'],fake.name,[],'name={}',True) for _ in range(num_queries)], 
-                        'address': [randomElement(people['address'],rndNoChar,[fake.address,"(\\n|,)"],'address={}',True) for _ in range(num_queries)],
-                        'age': [randomElement(people['age'],random.randint,[10,90],'age={}',True) for _ in range(num_queries)],
-                        'occupation': [randomElement(people['occupation'],rndNoChar,[fake.job,","],'occupation={}',True) for _ in range(num_queries)]},
-                        ['q{}'.format(i) for i in range(num_queries)])
+queries = Queries(pd.DataFrame({'id': [randomElement(people.index,random.randint,[num_queries,num_queries*2],'id={}',True) for _ in range(num_queries)],
+                        'name': [randomElement(people.getColumnSubset('name'),fake.name,[],'name={}',True) for _ in range(num_queries)], 
+                        'address': [randomElement(people.getColumnSubset('address'),rndNoChar,[fake.address,"(\\n|,)"],'address={}',True) for _ in range(num_queries)],
+                        'age': [randomElement(people.getColumnSubset('age'),random.randint,[10,90],'age={}',True) for _ in range(num_queries)],
+                        'occupation': [randomElement(people.getColumnSubset('occupation'),rndNoChar,[fake.job,","],'occupation={}',True) for _ in range(num_queries)]},
+                        ['q{}'.format(i) for i in range(num_queries)]))
 
 
 #create a dataframe for the utility matrix
-utility_matrix = pd.DataFrame([[randomElement(randomSourceFn=random.uniform,args=[0,100],alsoNaN=True) for _ in range(num_queries)] for _ in range(num_users)],users[0].values,queries.index.values)
+utility_matrix = UtilityMatrix(pd.DataFrame([[randomElement(randomSourceFn=random.uniform,args=[0,100],alsoNaN=True) for _ in range(num_queries)] for _ in range(num_users)],users.values,queries.index.values))
 
 baseFilesPath = "."
 

@@ -26,8 +26,8 @@ class Query(pSeries): #Trovare alternativa al subclassing, dato che non dovrebbe
         return query[:-3]
 
 class People:
-    def __init__(self, data = None, index = None, columns = None) -> None:
-        self.people = pd.DataFrame(data,index,columns)
+    def __init__(self, people: pDataFrame = pd.DataFrame()) -> None:
+        self.people = people
 
     @staticmethod
     def fromCsv(csvName: str = "", sep: str = ","):
@@ -48,7 +48,7 @@ class People:
     def getPerson(self,id) -> pSeries:
         return self.people.loc[id]
 
-    def getColumnSubset(self, columns: list = []) -> pDataFrame:
+    def getColumnSubset(self, columns: str | list = "") -> pDataFrame:
         return self.people[columns]
 
     def poseQuery(self, query: Query | str) -> pDataFrame:
@@ -57,8 +57,8 @@ class People:
         return self.people.query(query if isinstance(query,str) else str(query))
 
 class Users:
-    def __init__(self, data = None, index = None, name = None) -> None:
-        self.users = pd.Series(data,index,"object",name)
+    def __init__(self, users: pSeries = pd.Series(dtype="object")) -> None:
+        self.users = users
 
     @staticmethod
     def fromCsv(csvName: str = "", sep: str = ","):
@@ -84,8 +84,8 @@ class Users:
         return id in self.users.values
 
 class Queries:
-    def __init__(self, data = None, index = None, columns = None) -> None:
-        self.queries = pd.DataFrame(data,index,columns)
+    def __init__(self, queries: pDataFrame = pd.DataFrame()) -> None:
+        self.queries = queries
 
     @staticmethod
     def fromCsv(csvName: str = "", csvSep: str = ",", keyValueSep: str = "="): #Controllare se con file grandi questa procedura è troppo lenta
@@ -128,8 +128,8 @@ class Queries:
         return self.queries.query(query if isinstance(query,str) else str(query))
 
 class UtilityMatrix:
-    def __init__(self, data = None, index = None, columns = None) -> None:
-        self.utility_matrix = pd.DataFrame(data,index,columns)
+    def __init__(self, utility_matrix: pDataFrame = pd.DataFrame()) -> None:
+        self.utility_matrix = utility_matrix
 
     @staticmethod
     def fromCsv(csvName: str = "", sep: str = ","):
