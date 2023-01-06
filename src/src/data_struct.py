@@ -214,34 +214,41 @@ class Normal:
         self.mu = mu
         self.sd = sd
 
+    def getGrade(self):
+        return random.normalvariate(self.mu,self.sd)
+
 class Conditions: #Trovare nome migliore
-    def __init__(self, normal: Normal = Normal(), fields: set[str] | None = None, elementsProp: float = 1, specialCases: dict[str,set] = {}) -> None:
+    def __init__(self, normal: Normal = Normal(), fields: set[str] | None = None, elementsProp: float = 1, randomLen: bool = True, specialCases: dict[str,set] = {}) -> None:
         self.normal = normal
         self.fields = fields
         self.elementsProp = elementsProp if isIn0_1(elementsProp) else 1 #Trovare nome migliore
+        self.randomLen = randomLen
         self.specialCases = specialCases
 
 class UserProfile:
-    def __init__(self, people: People = People(), preferences: Conditions = Conditions(), disinterests: Conditions = Conditions(), avgGradesNormals: list[Normal] = [], randomLen: bool = True) -> None:
+    def __init__(self, people: People = People(), preferences: Conditions = Conditions(), disinterests: Conditions = Conditions(), avgGradesNormals: list[Normal] = []) -> None:
 
         toSample = {}
         tmpPref = {}
         tmpBlackList = {}
+
+        self.preferencesGrades = preferences.normal
+        self.disinterestsGrades = disinterests.normal
         
         if not people.empty:
             if preferences.fields == None: preferences.fields = set(maxLenSample(people.getFields()))
             if disinterests.fields == None: disinterests.fields = set(maxLenSample(people.getFields()))
 
-            for i in preferences.fields|disinterests.fields:
+            for i in preferences.fields|disinterests.fields: #remove special cases for coerence with random
                 toSample[i] = set(people.getColumnSubset(i).unique())
                 if i in preferences.specialCases: toSample[i] = toSample[i]-preferences.specialCases[i]
                 if i in disinterests.specialCases: toSample[i] = toSample[i]-disinterests.specialCases[i]
 
             for i in preferences.fields: #preferences creation
-                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),randomLen))
-                toSample[i] = toSample[i]-tmpPref[i]
+                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
+                if i in disinterests.fields: toSample[i] = toSample[i]-tmpPref[i]
             for i in disinterests.fields: #disinterests creation
-                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterests.elementsProp),randomLen))
+                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
 
             for i in preferences.specialCases: #preferences special cases
                 if i in tmpPref:
@@ -257,3 +264,32 @@ class UserProfile:
         self.preferences = tmpPref
         self.disinterests = tmpBlackList
         self.avgGradesNormals = avgGradesNormals
+
+    def getGrade(self, person: pSeries) -> float:
+
+        for i in self.preferences:
+            person[i] in self.preferences[i]
+        '''
+        #["name","age","occupation"]
+        #{
+            "name": ["Eros","Simone"]
+            "age": [10]
+            "occupation": ["fireman","employee","Sailor"]
+        }#
+        #Parametri casi particolari (piace,non piace a tutti)
+
+        p1,Eros,17,Sailor
+        liking = 2
+        liking:totLiking=x:typesGrades.length
+        x=liking*tyepsGrades/totLiking
+        random.norm(typesGrades[x])
+
+        persona-rating
+           u0 u1
+        p1 5  n
+        p2 10 n
+        p3 n  3
+
+        for all query -> poseQuery -> compute mu,sd of all p -> random.norm(mu,sd) for all u
+        randomElement(randomSourceFn=random.normalvariate,args=[0,1],alsoNaN=alsoNan)
+        '''
