@@ -58,6 +58,8 @@ low_grades = {
     "everyone": {}
 }
 average_grades = [Normal(50,5)]
+#
+alsoNan = True
 
 #create a dataframe for the users
 users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
@@ -81,10 +83,10 @@ for i in users[0]:
 
 persona_rating = pd.DataFrame([])
 '''
-   u0 u1
-p1 5  n
-p2 10 n
-p3 n  3
+   u0   u1
+p1 5    nan
+p2 10   nan
+p3 nan  3
 '''
 
 #create a dataframe for the queries
