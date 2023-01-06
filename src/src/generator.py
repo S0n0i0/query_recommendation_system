@@ -72,8 +72,8 @@ people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)]
                        'age': [random.randint(10, 90) for _ in range(num_people)],
                        'occupation': [rndNoChar(fake.job,",") for _ in range(num_people)]}))
 
-usersProfile = {}
-for i in users[0]:
+usersProfile: dict[str,UserProfile] = {}
+for i in users.users[0]:
     usersProfile[i] = UserProfile(people,
                                     Conditions(Normal(random.uniform(high_grades['minMu'],high_grades['maxMu']),random.uniform(high_grades['minSd'],high_grades['maxSd'])),
                                                 elementsProp=high_grades['lenProp'],randomLen=high_grades['randomLen'],specialCases=high_grades['everyone']),
@@ -81,12 +81,13 @@ for i in users[0]:
                                                 elementsProp=low_grades['lenProp'],randomLen=low_grades['randomLen'],specialCases=low_grades['everyone']),
                                     average_grades)
 
-persona_rating = pd.DataFrame([])
+persona_rating = pd.DataFrame([],
+                                users.users,people.people.index)
 '''
    u0   u1
-p1 5    nan
-p2 10   nan
-p3 nan  3
+p1 50    nan
+p2 100   nan
+p3 nan  30
 '''
 
 #create a dataframe for the queries

@@ -214,8 +214,15 @@ class Normal:
         self.mu = mu
         self.sd = sd
 
-    def getGrade(self):
-        return random.normalvariate(self.mu,self.sd)
+    def getGrade(self, min: float | None = None, max: float | None = None) -> float:
+        
+        grade = random.gauss(self.mu,self.sd)
+        if min is not None:
+            if grade < min: grade = min
+        if max is not None:
+            if grade > max: grade = max
+
+        return grade
 
 class Conditions: #Trovare nome migliore
     def __init__(self, normal: Normal = Normal(), fields: set[str] | None = None, elementsProp: float = 1, randomLen: bool = True, specialCases: dict[str,set] = {}) -> None:
@@ -265,31 +272,45 @@ class UserProfile:
         self.disinterests = tmpBlackList
         self.avgGradesNormals = avgGradesNormals
 
-    def getGrade(self, person: pSeries) -> float:
-
+    def getGrade(self, person: pSeries, min: float | None = None, max: float | None = None) -> float:
+        
+        liking = 0
         for i in self.preferences:
-            person[i] in self.preferences[i]
-        '''
-        #["name","age","occupation"]
-        #{
-            "name": ["Eros","Simone"]
-            "age": [10]
-            "occupation": ["fireman","employee","Sailor"]
-        }#
-        #Parametri casi particolari (piace,non piace a tutti)
+            if person[i] in self.preferences[i]: liking += 2
+            elif i not in self.disinterests or person[i] not in self.disinterests[i]: liking += 1
+        
+        totalGradeTypes = (2+len(self.avgGradesNormals))
+        gradeType = round(liking*totalGradeTypes/(len(self.preferences[i])*2)) #liking:maxLiking=gradeType:totalGradesType
+        print(liking,":",(len(self.preferences[i])*2),"=",gradeType,":",totalGradeTypes)
+        if gradeType == 0:
+            return self.disinterestsGrades.getGrade(min,max)
+        elif gradeType == totalGradeTypes:
+            return self.preferencesGrades.getGrade(min,max)
+        else:
+            return self.avgGradesNormals[gradeType-1].getGrade(min,max)
+        
+'''
+#["name","age","occupation"]
+#{
+    "name": ["Eros","Simone"]
+    "age": [10]
+    "occupation": ["fireman","employee","Sailor"]
+}#
+#Parametri casi particolari (piace,non piace a tutti)
 
-        p1,Eros,17,Sailor
-        liking = 2
-        liking:totLiking=x:typesGrades.length
-        x=liking*tyepsGrades/totLiking
-        random.norm(typesGrades[x])
+p1,Eros,17,Sailor,Via di là
+liking = 2
+liking:totLiking=x:typesGrades.length
+2:5=x:4
+x=liking*tyepsGrades/totLiking
+random.norm(typesGrades[x])
 
-        persona-rating
-           u0 u1
-        p1 5  n
-        p2 10 n
-        p3 n  3
+persona-rating
+    u0 u1
+p1 5  n
+p2 10 n
+p3 n  3
 
-        for all query -> poseQuery -> compute mu,sd of all p -> random.norm(mu,sd) for all u
-        randomElement(randomSourceFn=random.normalvariate,args=[0,1],alsoNaN=alsoNan)
-        '''
+for all query -> poseQuery -> compute mu,sd of all p -> random.norm(mu,sd) for all u
+randomElement(randomSourceFn=random.normalvariate,args=[0,1],alsoNaN=alsoNan)
+'''
