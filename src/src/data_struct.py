@@ -215,28 +215,45 @@ class Normal:
         self.sd = sd
 
 class Conditions: #Trovare nome migliore
-    def __init__(self, normal: Normal = Normal(), fields: list[str] | None = None, elementsProp: float = 1) -> None:
+    def __init__(self, normal: Normal = Normal(), fields: set[str] | None = None, elementsProp: float = 1, specialCases: dict[str,set] = {}) -> None:
         self.normal = normal
         self.fields = fields
-        self.elementsProp = elementsProp if isIn0_1(elementsProp) else 1 #Trovare nome migliore        
+        self.elementsProp = elementsProp if isIn0_1(elementsProp) else 1 #Trovare nome migliore
+        self.specialCases = specialCases
 
 class UserProfile:
-    def __init__(self, people: People = People(), preferences: Conditions = Conditions(), disinterest: Conditions = Conditions(), avgGradesNormals: list[Normal] = [], isRandom: bool = True) -> None:
+    def __init__(self, people: People = People(), preferences: Conditions = Conditions(), disinterests: Conditions = Conditions(), avgGradesNormals: list[Normal] = [], randomLen: bool = True) -> None:
 
         toSample = {}
         tmpPref = {}
         tmpBlackList = {}
-
+        
         if not people.empty:
-            for i in preferences.fields if preferences.fields != None else maxLenSample(people.getFields()):
+            if preferences.fields == None: preferences.fields = set(maxLenSample(people.getFields()))
+            if disinterests.fields == None: disinterests.fields = set(maxLenSample(people.getFields()))
+
+            for i in preferences.fields|disinterests.fields:
                 toSample[i] = set(people.getColumnSubset(i).unique())
-                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),isRandom))
+                if i in preferences.specialCases: toSample[i] = toSample[i]-preferences.specialCases[i]
+                if i in disinterests.specialCases: toSample[i] = toSample[i]-disinterests.specialCases[i]
+
+            for i in preferences.fields: #preferences creation
+                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),randomLen))
                 toSample[i] = toSample[i]-tmpPref[i]
-            for i in disinterest.fields if disinterest.fields != None else maxLenSample(people.getFields()):
-                if i not in toSample:
-                    toSample[i] = set(people.getColumnSubset(i).unique())
-                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterest.elementsProp),isRandom))
-        #print("@:",toSample)
+            for i in disinterests.fields: #disinterests creation
+                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterests.elementsProp),randomLen))
+
+            for i in preferences.specialCases: #preferences special cases
+                if i in tmpPref:
+                    tmpPref[i] = tmpPref[i] | preferences.specialCases[i]
+                else:
+                    tmpPref[i] = preferences.specialCases[i]
+            for i in disinterests.specialCases: #disinterests special cases
+                if i in tmpBlackList:
+                    tmpBlackList[i] = tmpBlackList[i] | disinterests.specialCases[i]
+                else:
+                    tmpBlackList[i] = disinterests.specialCases[i]
+                    
         self.preferences = tmpPref
-        self.disinterest = tmpBlackList
+        self.disinterests = tmpBlackList
         self.avgGradesNormals = avgGradesNormals
