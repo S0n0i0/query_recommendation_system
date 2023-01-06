@@ -2,12 +2,21 @@ from enum import Enum
 import pandas as pd
 import json
 import io
+import random
 from numpy import NaN
+from math import ceil
 
 Id = str
 Score = float
 pSeries = pd.core.series.Series
 pDataFrame = pd.core.frame.DataFrame
+
+def maxLenSample(sequence, maxLen: int | None = None, isRandom: bool = True):
+    l = maxLen if maxLen is not None and type(maxLen) == int else len(sequence)
+    return random.sample(sequence,random.randint(0,l) if isRandom else l)
+
+def isIn0_1(n: float) -> bool:
+    return n >= 0 and n <= 1
 
 class ReferenceType(Enum):
     USER = 0
@@ -46,7 +55,7 @@ class People:
 
     def getFields(self) -> tuple:
         ref = self.people
-        return tuple(ref.keys())#.insert(0,ref.index.name))
+        return tuple(ref.columns)#.insert(0,ref.index.name))
 
     '''def getPerson(self,id) -> pSeries:
         return self.people.loc[id]'''
@@ -199,3 +208,35 @@ class UtilityMatrix:
     def getScoresEq(self, n: float): #Trovare un modo migliore per eliminare righe e colonne
         scores = self.utility_matrix[self.utility_matrix.iloc[:] == n].dropna(0,"all")
         return scores.dropna(1,"all")
+
+class Normal:
+    def __init__(self, mu: float = 0, sd: float = 1) -> None:
+        self.mu = mu
+        self.sd = sd
+
+class Conditions: #Trovare nome migliore
+    def __init__(self, normal: Normal = Normal(), fields: list[str] | None = None, elementsProp: float = 1) -> None:
+        self.normal = normal
+        self.fields = fields
+        self.elementsProp = elementsProp if isIn0_1(elementsProp) else 1 #Trovare nome migliore        
+
+class UserProfile:
+    def __init__(self, people: People = People(), preferences: Conditions = Conditions(), disinterest: Conditions = Conditions(), avgGradesNormals: list[Normal] = [], isRandom: bool = True) -> None:
+
+        toSample = {}
+        tmpPref = {}
+        tmpBlackList = {}
+
+        if not people.empty:
+            for i in preferences.fields if preferences.fields != None else maxLenSample(people.getFields()):
+                toSample[i] = set(people.getColumnSubset(i).unique())
+                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),isRandom))
+                toSample[i] = toSample[i]-tmpPref[i]
+            for i in disinterest.fields if disinterest.fields != None else maxLenSample(people.getFields()):
+                if i not in toSample:
+                    toSample[i] = set(people.getColumnSubset(i).unique())
+                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterest.elementsProp),isRandom))
+        #print("@:",toSample)
+        self.preferences = tmpPref
+        self.disinterest = tmpBlackList
+        self.avgGradesNormals = avgGradesNormals
