@@ -11,7 +11,7 @@ Score = float
 pSeries = pd.core.series.Series
 pDataFrame = pd.core.frame.DataFrame
 
-def maxLenSample(sequence, maxLen: int | None = None, isRandom: bool = True):
+def maxLenSample(sequence, maxLen: int = None, isRandom: bool = True):
     l = maxLen if maxLen is not None and type(maxLen) == int else len(sequence)
     return random.sample(sequence,random.randint(0,l) if isRandom else l)
 
@@ -130,7 +130,10 @@ class Queries:
                     f.write(i)
                     for param in queryDict[i]:
                         if queryDict[i][param] != None:
-                            f.write("," + str(queryDict[i][param]))
+                            if i == "id":
+                                f.write("," + str(queryDict[i][param]))
+                            else:
+                                f.write("," + param + "=" + str(queryDict[i][param]))
                     f.write("\n")
     
     def __str__(self) -> str:
@@ -216,7 +219,7 @@ class Normal:
         self.mu = mu
         self.sd = sd
 
-    def getGrade(self, min: float | None = None, max: float | None = None) -> float:
+    def getGrade(self, min: float = None, max: float = None) -> float:
         
         grade = random.gauss(self.mu,self.sd)
         if min is not None:
@@ -227,7 +230,7 @@ class Normal:
         return grade
 
 class Conditions: #Trovare nome migliore
-    def __init__(self, normal: Normal = Normal(), fields: set[str] | None = None, elementsProp: float = 1, randomLen: bool = True, specialCases: dict[str,set] = {}) -> None:
+    def __init__(self, normal: Normal = Normal(), fields: set[str] = None, elementsProp: float = 1, randomLen: bool = True, specialCases: dict[str,set] = {}) -> None:
         self.normal = normal
         self.fields = fields
         self.elementsProp = elementsProp if isIn0_1(elementsProp) else 1 #Trovare nome migliore
@@ -274,7 +277,7 @@ class UserProfile:
         self.disinterests = tmpBlackList
         self.avgGradesNormals = avgGradesNormals
 
-    def getGrade(self, person: pSeries, min: float | None = None, max: float | None = None) -> float:
+    def getGrade(self, person: pSeries, min: float = None, max: float = None) -> float:
         
         liking = 0
         for i in self.preferences:

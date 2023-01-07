@@ -22,17 +22,19 @@ users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
 
 #create a dataframe for the people
 people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)], #Rimettere 'id' come index in caso si voglia tornare in quel modo
-                        'name': [fake.name() for _ in range(num_people)],
-                       'address': [strWithoutChar(fake.address,"(\\n|,|'|\")") for _ in range(num_people)],
-                       'age': [random.randint(10, 90) for _ in range(num_people)],
-                       'occupation': [strWithoutChar(fake.job,"('|,|'|\")") for _ in range(num_people)]}))
+                        'name': [fake.first_name() for _ in range(num_people)],
+                        'surname': [fake.last_name() for _ in range(num_people)],
+                        'address': [strWithoutChar(fake.city,"(\\n|,|'|\")") for _ in range(num_people)],
+                        'age': [random.randint(10, 90) for _ in range(num_people)],
+                        'occupation': [strWithoutChar(fake.job,"('|,|'|\")") for _ in range(num_people)]}))
 
 #create a dataframe for the queries
-queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'),rndFormattedInt,[num_queries,num_queries*2,"p{}"],'id={}',True) for _ in range(num_queries)],
-                        'name': [randomElement(people.getColumnSubset('name'),fake.name,[],'name={}',True) for _ in range(num_queries)], 
-                        'address': [randomElement(people.getColumnSubset('address'),strWithoutChar,[fake.address,"(\\n|,)"],'address={}',True) for _ in range(num_queries)],
-                        'age': [randomElement(people.getColumnSubset('age'),random.randint,[10,90],'age={}',True) for _ in range(num_queries)],
-                        'occupation': [randomElement(people.getColumnSubset('occupation'),strWithoutChar,[fake.job,","],'occupation={}',True) for _ in range(num_queries)]},
+queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'),rndFormattedInt,[num_queries,num_queries*2,"p{}"],alsoNaN=True) for _ in range(num_queries)],
+                        'name': [randomElement(people.getColumnSubset('name'),fake.first_name,alsoNaN=True) for _ in range(num_queries)],
+                        'surname': [randomElement(people.getColumnSubset('name'),fake.last_name,alsoNaN=True) for _ in range(num_queries)],
+                        'address': [randomElement(people.getColumnSubset('address'),strWithoutChar,[fake.city,"(\\n|,)"],alsoNaN=True) for _ in range(num_queries)],
+                        'age': [randomElement(people.getColumnSubset('age'),random.randint,[10,90],alsoNaN=True) for _ in range(num_queries)],
+                        'occupation': [randomElement(people.getColumnSubset('occupation'),strWithoutChar,[fake.job,","],alsoNaN=True) for _ in range(num_queries)]},
                         ['q{}'.format(i) for i in range(num_queries)]))
 
 
