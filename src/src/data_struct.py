@@ -179,6 +179,9 @@ class UtilityMatrix:
     def __getattr__(self, attr):
         return getattr(self.utility_matrix, attr)
 
+    def __getitem__(self, index):
+        return self.utility_matrix[index]
+
     def getScore(self, queryId: Id, userId: Id) -> Score:
         return self.utility_matrix[queryId][userId]
         
@@ -257,10 +260,10 @@ class UserProfile:
                 if i in disinterests.specialCases: toSample[i] = toSample[i]-disinterests.specialCases[i]
 
             for i in preferences.fields: #preferences creation
-                tmpPref[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
+                tmpPref[i] = set(maxLenSample(list(toSample[i]),ceil(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
                 if i in disinterests.fields: toSample[i] = toSample[i]-tmpPref[i]
             for i in disinterests.fields: #disinterests creation
-                tmpBlackList[i] = set(maxLenSample(toSample[i],ceil(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
+                tmpBlackList[i] = set(maxLenSample(list(toSample[i]),ceil(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
 
             for i in preferences.specialCases: #preferences special cases
                 if i in tmpPref:
