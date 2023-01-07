@@ -37,68 +37,73 @@ def populateUtilityMatrix(people: People, queries: Queries, users: Users, person
         q = queries.getQuery(i)
         result = people.poseQuery(q)
 
-        #TEST QUERY -----------------------------------------------------------
+        if result.empty:
+            for u in users.index.values:
+                utility_matrix[i][u] = 0 #Nobody likes an empty query
+        else:
+            #TEST QUERY -----------------------------------------------------------
 
-        #print(result.empty())
-        if len(result.index.values) > 0:
             countc +=1
-        
-        #-------------------------------------------------------------------
 
-        for u in users.index.values:
-            sum = 0
-            count = 0
-            dist = 0
-            mu = NaN
-            sd = NaN
+            #-------------------------------------------------------------------
 
-            #Get mean
-            for p in result.index.values:
-                tmp = persona_rating[p][u] 
-                if tmp is not NaN:
-                    sum += tmp
-                    count += 1
+            for u in users.index.values:
+                sum = 0
+                count = 0
+                dist = 0
+                gradeNormal = Normal(NaN,NaN)
 
-            if count > 0:
-                mu = sum / count
+                #Get mean
+                for p in result.index.values:
+                    tmp = persona_rating[p][u] 
+                    if tmp is not NaN:
+                        sum += tmp
+                        count += 1
 
-            #Get std
-            for p in result.index.values:
-                tmp = persona_rating[p][u] 
-                if tmp is not NaN:
-                    dist += (tmp - mu)**2
+                if count > 0:
+                    gradeNormal.mu = sum / count
 
-            if count > 0:
-                sd = sqrt(dist/count) 
+                #Get std
+                if gradeNormal.mu is not NaN:    
+                    for p in result.index.values:
+                        tmp = persona_rating[p][u] 
+                        if tmp is not NaN:
+                            dist += (tmp - gradeNormal.mu)**2
 
-            if mu is not NaN and sd is not NaN:           
-                utility_matrix[i][u] = Normal(mu, sd).getGrade(min, max)
-            else:
-                utility_matrix[i][u] = NaN
+                    if count > 0:
+                        gradeNormal.sd = sqrt(dist/count) 
+
+                if gradeNormal.mu is not NaN:
+                    utility_matrix[i][u] = gradeNormal.getGrade(min, max)
+                else:
+                    utility_matrix[i][u] = NaN
 
     print(countc)
 
-def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, users: Users, num_users: int, num_queries:int, percentToDelete: int):
+def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, users: Users, percentToDelete: int):
 
     users_list = users.index.values.copy()
     queries_list = queries.index.values.copy()
+
+    num_users = users.size
+    num_queries = queries.index.size
+    tot = utiliy_matrix.size
 
     deletedRows = False
     deletedColumns = False
     
     #Get how many elements to delete and how many to keep
-    tot = num_users * num_queries
     nDelete =  int((percentToDelete * tot) / 100) #nDelete=10 
 
     #Get the number of columns to set to Nan
     nRowsDelete =  int((20 * num_users) / 100) #=2
     if nDelete > nRowsDelete * num_queries:
-        nDelete -= nRowsDelete * num_queries   #-1 
+        nDelete -= nRowsDelete * num_queries   #-1
         deletedRows = True
 
     #Get the number of rows to set to Nan
     nColDelete = int((20 * num_queries) / 100) #=2
-    if nDelete > nColDelete * num_users  :
+    if nDelete > nColDelete * num_users:
         nDelete -= nColDelete * num_users          #nDelete = 70 - (2*10) = 50
         deletedColumns =True
 
