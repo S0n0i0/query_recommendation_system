@@ -2,6 +2,7 @@ import random
 import re
 from data_struct import *
 from math import sqrt
+import itertools
 
 def strWithoutChar(fnSource,toReplace: str,value: str = " "):
     """Generation of a string from fnSource where value is put in place of substring found by regex toReplace"""
@@ -29,13 +30,26 @@ def rndFormattedInt(min: int = 0, max: int = 10, template: str = None):
 
 def populateUtilityMatrix(people: People, queries: Queries, users: Users, persona_rating: pDataFrame, utility_matrix: UtilityMatrix, min: float = 0, max: float = 100):
 
+    countc = 0
+
     for i in queries.index.values:
         q = queries.getQuery(i)
         result = people.poseQuery(q)
+
+        #TEST QUERY -----------------------------------------------------------
+
+        #print(result.index.values)
+        if len(result.index.values) > 0:
+            countc +=1
+        
+        #-------------------------------------------------------------------
+
         for u in users.index.values:
             sum = 0
             count = 0
             dist = 0
+            mu = NaN
+            sd = NaN
 
             #Get mean
             for p in result.index.values:
@@ -43,17 +57,78 @@ def populateUtilityMatrix(people: People, queries: Queries, users: Users, person
                 if tmp is not NaN:
                     sum += tmp
                     count += 1
-                print(p)
-                #persona_rating[p][u] 
-            mu = sum / count
+
+            if count > 0:
+                mu = sum / count
 
             #Get std
             for p in result.index.values:
                 tmp = persona_rating[p][u] 
                 if tmp is not NaN:
                     dist += (tmp - mu)**2
-                print(p)
 
-            sd = sqrt(dist/count)            
-            utility_matrix[i][u] = Normal(mu, sd).getGrade(max, min)
+            if count > 0:
+                sd = sqrt(dist/count) 
+
+            if mu is not NaN and sd is not NaN:           
+                utility_matrix[i][u] = Normal(mu, sd).getGrade(min, max)
+            else:
+                utility_matrix[i][u] = NaN
+
+    print(countc)
+
+def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, users: Users, num_users: int, num_queries:int, percentToDelete: int):
+
+    users_list = users.index.values.copy()
+    queries_list = queries.index.values.copy()
+
+    num_queries = len(queries_list)
+    num_users = len(users_list)
     
+    #Get how many elements to delete and how many to keep
+    tot = num_users * num_queries
+    nDelete =  int((percentToDelete * tot) / 100)
+
+
+    #Get the number of columns to set to Nan
+    nRowsDelete =  int((10 * num_users) / 100)
+    nDelete -= nRowsDelete * num_queries
+
+    #Get the number of rows to set to Nan
+    nColDelete = int((10 * num_queries) / 100)
+    nDelete -= nColDelete * num_users
+
+    nKeep = tot - nDelete   
+
+    #Get cartesian product of users and queries
+    lists= [users_list, queries_list]
+    cart_product = list()
+    for element in itertools.product(*lists):
+        cart_product.append(element)
+
+    #shuffle cartesian product and delete as many elements as the cells i want to keep
+    random.shuffle(cart_product)
+    cart_product = cart_product[nKeep:] #contains the coordinates of the values to set to NaN
+
+    #Set the values to Nan
+    for i in range(len(cart_product)):
+        userId = "u{}".format(cart_product[i][0])
+        queryId = cart_product[i][1]
+        utiliy_matrix[queryId][userId] = NaN
+
+    #Set random columns to Nan
+    random.shuffle(queries_list)
+
+    for i in range(nColDelete):
+        for userId in range(num_users):
+            queryId = queries_list[i]
+            utiliy_matrix[queryId][userId] = NaN
+
+    #Set random rows to Nan
+    random.shuffle(users_list)
+
+    for i in range(nRowsDelete):
+        for queryId in queries_list:
+            userId = "u{}".format(users_list[i])
+            utiliy_matrix[queryId][userId] = NaN
+
