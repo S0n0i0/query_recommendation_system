@@ -268,11 +268,11 @@ class UserProfile:
                 if i in disinterests.specialCases: toSample[i] = toSample[i]-disinterests.specialCases[i]
 
             for i in preferences.fields: #preferences creation
-                tmpPref[i] = set(maxLenSample(toSample[i],round(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
+                tmpPref[i] = set(maxLenSample(list(toSample[i]),round(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
                 if len(tmpPref[i]) == 0: tmpPref.pop(i)
                 elif i in disinterests.fields: toSample[i] = toSample[i]-tmpPref[i]
             for i in disinterests.fields: #disinterests creation
-                tmpBlackList[i] = set(maxLenSample(toSample[i],round(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
+                tmpBlackList[i] = set(maxLenSample(list(toSample[i]),round(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
                 if len(tmpBlackList[i]) == 0: tmpBlackList.pop(i)
 
             for i in preferences.specialCases: #preferences special cases

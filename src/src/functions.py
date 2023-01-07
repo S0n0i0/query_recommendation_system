@@ -38,7 +38,7 @@ def populateUtilityMatrix(people: People, queries: Queries, users: Users, person
 
         #TEST QUERY -----------------------------------------------------------
 
-        #print(result.index.values)
+        #print(result.empty())
         if len(result.index.values) > 0:
             countc +=1
         
@@ -81,23 +81,20 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
 
     users_list = users.index.values.copy()
     queries_list = queries.index.values.copy()
-
-    num_queries = len(queries_list)
-    num_users = len(users_list)
     
     #Get how many elements to delete and how many to keep
     tot = num_users * num_queries
-    nDelete =  int((percentToDelete * tot) / 100)
-
+    nDelete =  int((percentToDelete * tot) / 100) #nDelete=90 
 
     #Get the number of columns to set to Nan
-    nRowsDelete =  int((10 * num_users) / 100)
-    nDelete -= nRowsDelete * num_queries
+    nRowsDelete =  int((20 * num_users) / 100) #=2
+    nDelete -= nRowsDelete * num_queries   #-1 for the crossing element
 
     #Get the number of rows to set to Nan
-    nColDelete = int((10 * num_queries) / 100)
-    nDelete -= nColDelete * num_users
+    nColDelete = int((20 * num_queries) / 100) #=2
+    nDelete -= nColDelete * num_users          #nDelete = 70 - (2*10) = 50
 
+    nDelete += nRowsDelete + nColDelete #Crossing cells
     nKeep = tot - nDelete   
 
     #Get cartesian product of users and queries
@@ -106,29 +103,49 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
     for element in itertools.product(*lists):
         cart_product.append(element)
 
+    #Set random rows to Nan
+    random.shuffle(users_list)
+
+    userIds = set() 
+
+    for i in range(nRowsDelete):
+        for queryId in queries_list:
+            userId = "u{}".format(users_list[i])
+            userIds.add(users_list[i])
+            utiliy_matrix[queryId][userId] = NaN
+
+    print(userIds)
+
+    #Set random columns to Nan
+    random.shuffle(queries_list)
+
+    queryIds = set()
+
+    for i in range(nColDelete):
+        for userId in range(num_users):
+            queryId = queries_list[i]
+            queryIds.add(queryId)
+            utiliy_matrix[queryId][userId] = NaN
+
+    print(queryIds)
+    
+    for i in userIds:
+        for j in queries_list:
+            cart_product.remove((i, j))
+
+    for i in queryIds:
+        for j in users_list:
+            if j not in userIds:
+                cart_product.remove((j, i))
+
+    print(cart_product)
+
     #shuffle cartesian product and delete as many elements as the cells i want to keep
     random.shuffle(cart_product)
-    cart_product = cart_product[nKeep:] #contains the coordinates of the values to set to NaN
+    cart_product = cart_product[:nKeep] #contains the coordinates of the values to set to NaN
 
     #Set the values to Nan
     for i in range(len(cart_product)):
         userId = "u{}".format(cart_product[i][0])
         queryId = cart_product[i][1]
         utiliy_matrix[queryId][userId] = NaN
-
-    #Set random columns to Nan
-    random.shuffle(queries_list)
-
-    for i in range(nColDelete):
-        for userId in range(num_users):
-            queryId = queries_list[i]
-            utiliy_matrix[queryId][userId] = NaN
-
-    #Set random rows to Nan
-    random.shuffle(users_list)
-
-    for i in range(nRowsDelete):
-        for queryId in queries_list:
-            userId = "u{}".format(users_list[i])
-            utiliy_matrix[queryId][userId] = NaN
-

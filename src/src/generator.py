@@ -14,9 +14,9 @@ fake = Faker(['it_IT', 'en_US'])
 
 #Configuration
 #number of users, people and queries
-num_users = 100
-num_people = 100
-num_queries = 100
+num_users = 10
+num_people = 10
+num_queries = 10
 #user profiles informations
 high_grades = {
     "minMu": 80,
