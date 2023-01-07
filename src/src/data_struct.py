@@ -4,7 +4,6 @@ import json
 import io
 import random
 from numpy import NaN
-from math import ceil
 
 Id = str
 Score = float
@@ -53,6 +52,9 @@ class People:
 
     def __getattr__(self, attr):
         return getattr(self.people, attr)
+    
+    def __getitem__(self, index):
+        return self.people[index]
 
     def getFields(self) -> tuple:
         ref = self.people
@@ -88,6 +90,9 @@ class Users:
 
     def __getattr__(self, attr):
         return getattr(self.users, attr)
+    
+    def __getitem__(self, index):
+        return self.users[index]
 
     def getUser(self, index: int) -> Id:
         return self.users[index]
@@ -141,6 +146,9 @@ class Queries:
 
     def __getattr__(self, attr):
         return getattr(self.queries, attr)
+    
+    def __getitem__(self, index):
+        return self.queries[index]
 
     def getQuery(self, id: Id) -> Query:
         return Query(self.queries.loc[id])
@@ -178,7 +186,7 @@ class UtilityMatrix:
 
     def __getattr__(self, attr):
         return getattr(self.utility_matrix, attr)
-
+    
     def __getitem__(self, index):
         return self.utility_matrix[index]
 
@@ -260,10 +268,12 @@ class UserProfile:
                 if i in disinterests.specialCases: toSample[i] = toSample[i]-disinterests.specialCases[i]
 
             for i in preferences.fields: #preferences creation
-                tmpPref[i] = set(maxLenSample(list(toSample[i]),ceil(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
-                if i in disinterests.fields: toSample[i] = toSample[i]-tmpPref[i]
+                tmpPref[i] = set(maxLenSample(toSample[i],round(len(toSample[i])*preferences.elementsProp),preferences.randomLen))
+                if len(tmpPref[i]) == 0: tmpPref.pop(i)
+                elif i in disinterests.fields: toSample[i] = toSample[i]-tmpPref[i]
             for i in disinterests.fields: #disinterests creation
-                tmpBlackList[i] = set(maxLenSample(list(toSample[i]),ceil(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
+                tmpBlackList[i] = set(maxLenSample(toSample[i],round(len(toSample[i])*disinterests.elementsProp),disinterests.randomLen))
+                if len(tmpBlackList[i]) == 0: tmpBlackList.pop(i)
 
             for i in preferences.specialCases: #preferences special cases
                 if i in tmpPref:
@@ -283,13 +293,12 @@ class UserProfile:
     def getGrade(self, person: pSeries, min: float = None, max: float = None) -> float:
         
         liking = 0
-        for i in self.preferences:
-            if person[i] in self.preferences[i]: liking += 2
+        for i in person.index:
+            if i in self.preferences and person[i] in self.preferences[i]: liking += 2
             elif i not in self.disinterests or person[i] not in self.disinterests[i]: liking += 1
         
-        totalGradeTypes = (2+len(self.avgGradesNormals))
-        gradeType = round(liking*totalGradeTypes/(len(self.preferences[i])*2)) #liking:maxLiking=gradeType:totalGradesType
-        print(liking,":",(len(self.preferences[i])*2),"=",gradeType,":",totalGradeTypes)
+        totalGradeTypes = (len(self.avgGradesNormals)+1) #1 low + 1 high + averages, but zero based
+        gradeType = round(liking*totalGradeTypes/(len(person.index)*2)) #liking:maxLiking=gradeType:totalGradesType
         if gradeType == 0:
             return self.disinterestsGrades.getGrade(min,max)
         elif gradeType == totalGradeTypes:
