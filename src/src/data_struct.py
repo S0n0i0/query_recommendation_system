@@ -31,7 +31,8 @@ class Query(pSeries): #Trovare alternativa al subclassing, dato che non dovrebbe
         query = ""
         fields = self[self.notna()]
         for i in fields.index:
-            query += str(i) + " == '" +  str(fields[i]) + "' & "
+            value = str(fields[i]) if type(fields[i]) != str else "'" + str(fields[i]) + "'"
+            query += str(i) + " == " + value + " & "
         return query[:-3]
 
 class People:
@@ -64,9 +65,10 @@ class People:
         return self.people[columns]
 
     def poseQuery(self, query: Query | str) -> pDataFrame:
-        """Consider the table structure indexes=people, columns=fields"""
-
-        return self.people.query(query if isinstance(query,str) else str(query))
+        """Consider the table structure indexes=people, columns=fields.
+        An empty query corresponds to select all people"""
+        
+        return self.people if str(query) == "" else self.people.query(query if isinstance(query,str) else str(query))
 
 class Users:
     def __init__(self, users: pSeries = pd.Series(dtype="object")) -> None:
