@@ -15,10 +15,11 @@ def randomElement(existingSource = None, randomSourceFn = None, args: list = [],
     if randomSourceFn != None: possibilities.append(1)
     if alsoNaN: possibilities.append(2)
     
-    choice = random.choice(possibilities)
-    if not choice:
+    choice = random.choices(possibilities, weights=[1, 0, 5], k=1) #None ha una possibilità 10 volte più alta di uscire del primo
+
+    if not choice[0]:
         res = existingSource[random.randint(0,existingSource.size-1)]
-    elif choice == 1:
+    elif choice[0] == 1:
         res = randomSourceFn(*args)
     else:
         return None
@@ -81,20 +82,29 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
 
     users_list = users.index.values.copy()
     queries_list = queries.index.values.copy()
+
+    deletedRows = False
+    deletedColumns = False
     
     #Get how many elements to delete and how many to keep
     tot = num_users * num_queries
-    nDelete =  int((percentToDelete * tot) / 100) #nDelete=90 
+    nDelete =  int((percentToDelete * tot) / 100) #nDelete=10 
 
     #Get the number of columns to set to Nan
     nRowsDelete =  int((20 * num_users) / 100) #=2
-    nDelete -= nRowsDelete * num_queries   #-1 for the crossing element
+    if nDelete > nRowsDelete * num_queries:
+        nDelete -= nRowsDelete * num_queries   #-1 
+        deletedRows = True
 
     #Get the number of rows to set to Nan
     nColDelete = int((20 * num_queries) / 100) #=2
-    nDelete -= nColDelete * num_users          #nDelete = 70 - (2*10) = 50
+    if nDelete > nColDelete * num_users  :
+        nDelete -= nColDelete * num_users          #nDelete = 70 - (2*10) = 50
+        deletedColumns =True
 
-    nDelete += nRowsDelete + nColDelete #Crossing cells
+    if deletedColumns and deletedRows:
+        nDelete += nRowsDelete * nColDelete #Crossing cells
+
     nKeep = tot - nDelete   
 
     #Get cartesian product of users and queries
@@ -104,45 +114,42 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
         cart_product.append(element)
 
     #Set random rows to Nan
-    random.shuffle(users_list)
+    if deletedRows:
+        random.shuffle(users_list)
 
-    userIds = set() 
+        userIds = set() 
 
-    for i in range(nRowsDelete):
-        for queryId in queries_list:
-            userId = "u{}".format(users_list[i])
+        for i in range(nRowsDelete):
             userIds.add(users_list[i])
-            utiliy_matrix[queryId][userId] = NaN
+            for queryId in queries_list:
+                userId = "u{}".format(users_list[i])            
+                utiliy_matrix[queryId][userId] = NaN
 
-    print(userIds)
+        for i in userIds:
+            for j in queries_list:
+                cart_product.remove((i, j))
 
     #Set random columns to Nan
-    random.shuffle(queries_list)
+    if deletedColumns:
+        random.shuffle(queries_list)
 
-    queryIds = set()
+        queryIds = set()
 
-    for i in range(nColDelete):
-        for userId in range(num_users):
-            queryId = queries_list[i]
-            queryIds.add(queryId)
-            utiliy_matrix[queryId][userId] = NaN
+        for i in range(nColDelete):
+            for userId in range(num_users):
+                queryId = queries_list[i]
+                queryIds.add(queryId)
+                utiliy_matrix[queryId][userId] = NaN
 
-    print(queryIds)
-    
-    for i in userIds:
-        for j in queries_list:
-            cart_product.remove((i, j))
-
-    for i in queryIds:
-        for j in users_list:
-            if j not in userIds:
-                cart_product.remove((j, i))
-
-    print(cart_product)
+        for i in queryIds:
+            for j in users_list:
+                if j not in userIds:
+                    cart_product.remove((j, i))   
 
     #shuffle cartesian product and delete as many elements as the cells i want to keep
     random.shuffle(cart_product)
-    cart_product = cart_product[:nKeep] #contains the coordinates of the values to set to NaN
+    cart_product = cart_product[nKeep:] #contains the coordinates of the values to set to NaN
+
 
     #Set the values to Nan
     for i in range(len(cart_product)):
