@@ -9,8 +9,6 @@ from math import sqrt
 
 # initialize Faker
 fake = Faker(['it_IT', 'en_US'])
-# Faker.seed(12345)
-# random.seed(12345)
 
 # Configuration
 # number of users, people and queries
@@ -19,35 +17,35 @@ num_people = 10
 num_queries = 10
 # user profiles informations
 usersToNaN = 0 #Fraction (range of [0,1]) of users that has pose no query
-high_grades = {
-    "minMu": 80,
-    "maxMu": 100,
-    "minSd": 1,
-    "maxSd": 10,
-    "lenProp": random.uniform(0, 1),
-    "randomLen": True,
-    "everyone": {}
+preferences = {
+    "minMu": 80, #Minimum mean of the Gaussian normal that defines the highest grades
+    "maxMu": 100, #Maximum mean of the Gaussian normal that defines the highest grades
+    "minSd": 1, #Minimum standard deviation of the Gaussian normal that defines the highest grades
+    "maxSd": 10, #Maximum standard deviation of the Gaussian normal that defines the highest grades
+    "elementFrac": random.uniform(0, 1), #Fraction (range of [0,1]) of elements of a field that a user can like out of all those possible
+    "randomLen": True, #Tell if elementFrac is the actual or a maximum value
+    "everyone": {} #Element that everyone like
 }
-low_grades = {
-    "minMu": 20,
-    "maxMu": 40,
-    "minSd": 1,
-    "maxSd": 10,
-    "lenProp": random.uniform(0, 1),
-    "randomLen": True,
-    "everyone": {}
+disinterests = {
+    "minMu": 20, #Minimum mean of the Gaussian normal that defines the lowest grades
+    "maxMu": 40, #Maximum mean of the Gaussian normal that defines the lowest grades
+    "minSd": 1, #Minimum standard deviation of the Gaussian normal that defines the lowest grades
+    "maxSd": 10, #Maximum standard deviation of the Gaussian normal that defines the lowest grades
+    "elementFrac": random.uniform(0, 1), #Fraction (range of [0,1]) of elements of a field that a user could be disinterested out of all the remaining from from the preferences
+    "randomLen": True, #Tell if elementFrac is the actual or a maximum value
+    "everyone": {} #Element that everyone dislike
 }
-average_grades = [Normal(50, 5)]
-min_grade = 0
-max_grade = 100
+average_grades = [Normal(50, 5)] #Gaussian normals, ordered by mean, that defines the intermediary grades (so, not the lowest and the highest)
+min_grade = 0 #Min grade possible
+max_grade = 100 #Max grade possible
 #Queries
 queriesWeights = [1,0,5] #Weights for queries: query with [elements existing in people, random new elements, not present in the query]
 queriesToNaN = 0 #Fraction (range of [0,1]) of query posed by nobody
 #Utility matrix
-sparsity = 0.9
+sparsity = 0.9 #Fraction (range of [0,1]) of elements to remove
 #Various
-special_char_regex = "(\\n|,|\'|\")"
-baseFilesPath = "."
+special_char_regex = "(\\n|,|\'|\")" #Special character to remove from random strings
+base_files_path = "../data/" #Base path of CSVs
 
 
 # Create a dataframe for the people
@@ -74,9 +72,12 @@ queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'
 
 
 # Save people, users and queries to CSV files
-people.toCsv(baseFilesPath + "/files/people.csv")
-users.toCsv(baseFilesPath + "/files/users.csv")
-queries.toCsv(baseFilesPath + "/files/queries.csv")
+people.toCsv(base_files_path + "people.csv")
+print("People file generated")
+users.toCsv(base_files_path + "users.csv")
+print("Users file generated")
+queries.toCsv(base_files_path + "queries.csv")
+print("Queries file generated")
 
 
 # Create profiles for users that has posed some queries
@@ -85,10 +86,10 @@ users.sort_index(inplace=True)
 usersProfile: dict[str, UserProfile] = {}
 for i in users.values:
     usersProfile[i] = UserProfile(people,
-                                  Conditions(Normal(random.uniform(high_grades['minMu'], high_grades['maxMu']), random.uniform(high_grades['minSd'], high_grades['maxSd'])),
-                                             elementsProp=high_grades['lenProp'], randomLen=high_grades['randomLen'], specialCases=high_grades['everyone']),
-                                  Conditions(Normal(random.uniform(low_grades['minMu'], low_grades['maxMu']), random.uniform(low_grades['minSd'], low_grades['maxSd'])),
-                                             elementsProp=low_grades['lenProp'], randomLen=low_grades['randomLen'], specialCases=low_grades['everyone']),
+                                  Conditions(Normal(random.uniform(preferences['minMu'], preferences['maxMu']), random.uniform(preferences['minSd'], preferences['maxSd'])),
+                                             elementsProp=preferences['elementFrac'], randomLen=preferences['randomLen'], specialCases=preferences['everyone']),
+                                  Conditions(Normal(random.uniform(disinterests['minMu'], disinterests['maxMu']), random.uniform(disinterests['minSd'], disinterests['maxSd'])),
+                                             elementsProp=disinterests['elementFrac'], randomLen=disinterests['randomLen'], specialCases=disinterests['everyone']),
                                   average_grades)
 
 
@@ -108,7 +109,7 @@ utility_matrix = UtilityMatrix(pd.DataFrame([[NaN for _ in range(queries.index.s
 cellCoordinates = populateUtilityMatrix(utility_matrix, people, queries, persona_rating, min_grade, max_grade)
 
 removeValuesUtilityMatrix(utility_matrix, cellCoordinates, sparsity)
-print(utility_matrix)
 
 # Save utility matrix to CSV files
-utility_matrix.toCsv(baseFilesPath + "/files/utility_matrix.csv")
+utility_matrix.toCsv(base_files_path + "utility_matrix.csv")
+print("Utility matrix file generated")
