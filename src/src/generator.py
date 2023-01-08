@@ -18,6 +18,7 @@ num_users = 10
 num_people = 10
 num_queries = 10
 # user profiles informations
+#usersToNaN = 20 #Percentage of users that has pose no query
 high_grades = {
     "minMu": 80,
     "maxMu": 100,
@@ -39,13 +40,14 @@ low_grades = {
 average_grades = [Normal(50, 5)]
 min_grade = 0
 max_grade = 100
-#
-alsoNan = True
+#Queries
+queriesWeights = [1,0,5] #Weights for queries: query with [elements existing in people, random new elements, not present in the query]
+#Various
 special_char_regex = "(\\n|,|\'|\")"
 
 # create a dataframe for the users
 users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
-
+#notNaNUsers = set(users.sample(users.size-usersToNaN*users.size/100))
 
 # create a dataframe for the people
 people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)],  # Rimettere 'id' come index in caso si voglia tornare in quel modo
@@ -56,7 +58,7 @@ people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)]
                               'occupation': [strWithoutChar(fake.job, special_char_regex) for _ in range(num_people)]}))
 
 usersProfile: dict[str, UserProfile] = {}
-for i in users.values:
+for i in users.values:# notNaNUsers:
     usersProfile[i] = UserProfile(people,
                                   Conditions(Normal(random.uniform(high_grades['minMu'], high_grades['maxMu']), random.uniform(high_grades['minSd'], high_grades['maxSd'])),
                                              elementsProp=high_grades['lenProp'], randomLen=high_grades['randomLen'], specialCases=high_grades['everyone']),
@@ -64,30 +66,26 @@ for i in users.values:
                                              elementsProp=low_grades['lenProp'], randomLen=low_grades['randomLen'], specialCases=low_grades['everyone']),
                                   average_grades)
 
+tmp_persona_rating = []
 persona_rating = pd.DataFrame([[usersProfile[i].getGrade(people.iloc[j], min_grade, max_grade) for j in people.index] for i in usersProfile],
-                              users, people.index)
-'''
-   u0   u1
-p1 50    nan
-p2 100   nan
-p3 nan  30
-'''
+                                users, people.index)#users.values],
 
 # create a dataframe for the queries
-queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'), rndFormattedInt, [num_queries, num_queries*2, "p{}"], alsoNaN=True) for _ in range(num_queries)],
-                                'name': [randomElement(people.getColumnSubset('name'), fake.first_name, alsoNaN=True) for _ in range(num_queries)],
-                                'surname': [randomElement(people.getColumnSubset('name'), fake.last_name, alsoNaN=True) for _ in range(num_queries)],
-                                'address': [randomElement(people.getColumnSubset('address'), strWithoutChar, [fake.city, special_char_regex], alsoNaN=True) for _ in range(num_queries)],
-                                'age': [randomElement(people.getColumnSubset('age'), random.randint, [10, 90], alsoNaN=True) for _ in range(num_queries)],
-                                'occupation': [randomElement(people.getColumnSubset('occupation'), strWithoutChar, [fake.job, special_char_regex], alsoNaN=True) for _ in range(num_queries)]},
+queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'), rndFormattedInt, [num_queries, num_queries*2, "p{}"], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
+                                'name': [randomElement(people.getColumnSubset('name'), fake.first_name, alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
+                                'surname': [randomElement(people.getColumnSubset('name'), fake.last_name, alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
+                                'address': [randomElement(people.getColumnSubset('address'), strWithoutChar, [fake.city, special_char_regex], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
+                                'age': [randomElement(people.getColumnSubset('age'), random.randint, [10, 90], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
+                                'occupation': [randomElement(people.getColumnSubset('occupation'), strWithoutChar, [fake.job, special_char_regex], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)]},
                                ['q{}'.format(i) for i in range(num_queries)]))
 
 # create a dataframe for the utility matrix
 utility_matrix = UtilityMatrix(pd.DataFrame([[NaN for _ in range(num_queries)] for _ in range(num_users)], users.values, queries.index.values))
-populateUtilityMatrix(people, queries, users, persona_rating, utility_matrix, 0, 100)
+
+print(populateUtilityMatrix(people, queries, users, persona_rating, utility_matrix, 0, 100))
 print(utility_matrix)
 
-removeValuesUtilityMatrix(utility_matrix, queries, users, num_users, num_queries, 90)
+removeValuesUtilityMatrix(utility_matrix, queries, users, 90)
 print(utility_matrix)
 
 baseFilesPath = "."

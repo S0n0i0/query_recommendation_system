@@ -3,7 +3,7 @@ import pandas as pd
 import json
 import io
 import random
-from numpy import NaN
+from numpy import NaN,isnan
 
 Id = str
 Score = float
@@ -135,9 +135,11 @@ class Queries:
                     f.write(i)
                     for param in queryDict[i]:
                         if queryDict[i][param] != None:
-                            if i == "id":
-                                f.write("," + str(queryDict[i][param]))
-                            else:
+                            try:
+                                nan = isnan(queryDict[i][param])
+                            except:
+                                nan = False
+                            if not nan:
                                 f.write("," + param + "=" + str(queryDict[i][param]))
                     f.write("\n")
     

@@ -9,13 +9,13 @@ def strWithoutChar(fnSource,toReplace: str,value: str = " "):
 
     return re.sub(toReplace,value,fnSource())
 
-def randomElement(existingSource = None, randomSourceFn = None, args: list = [], template: str = None, alsoNaN: bool = False) -> any:
+def randomElement(existingSource = None, randomSourceFn = None, args: list = [], template: str = None, alsoNaN: bool = False, weights: list = None) -> any:
     possibilities = []
     if existingSource is not None: possibilities.append(0)
     if randomSourceFn != None: possibilities.append(1)
     if alsoNaN: possibilities.append(2)
     
-    choice = random.choices(possibilities, weights=[1, 0, 5], k=1) #None ha una possibilità 10 volte più alta di uscire del primo
+    choice = random.choices(possibilities, weights=weights, k=1) #None ha una possibilità 10 volte più alta di uscire del primo
 
     if not choice[0]:
         res = existingSource[random.randint(0,existingSource.size-1)]
@@ -31,22 +31,22 @@ def rndFormattedInt(min: int = 0, max: int = 10, template: str = None):
 
 def populateUtilityMatrix(people: People, queries: Queries, users: Users, persona_rating: pDataFrame, utility_matrix: UtilityMatrix, min: float = 0, max: float = 100):
 
-    countc = 0
+    nNaN = {
+        "cells": 0, #Da togliere e mettere furoi per tagliare prod_cart
+        "columns": 0,
+        "rows": 0
+    }
 
-    for i in queries.index.values:
-        q = queries.getQuery(i)
-        result = people.poseQuery(q)
+    NaNInRows = [0]*queries.index.size
+    for q in queries.index.values:
+        result = people.poseQuery(queries.getQuery(q))
 
         if result.empty:
             for u in users.index.values:
-                utility_matrix[i][u] = 0 #Nobody likes an empty query
+                utility_matrix[q][u] = 0 #Nobody likes an empty query
         else:
-            #TEST QUERY -----------------------------------------------------------
-
-            countc +=1
-
-            #-------------------------------------------------------------------
-
+            i = 0
+            NaNInCol = 0
             for u in users.index.values:
                 sum = 0
                 count = 0
@@ -55,8 +55,8 @@ def populateUtilityMatrix(people: People, queries: Queries, users: Users, person
 
                 #Get mean
                 for p in result.index.values:
-                    tmp = persona_rating[p][u] 
-                    if tmp is not NaN:
+                    tmp = persona_rating[p][u]
+                    if not isnan(tmp):
                         sum += tmp
                         count += 1
 
@@ -64,21 +64,27 @@ def populateUtilityMatrix(people: People, queries: Queries, users: Users, person
                     gradeNormal.mu = sum / count
 
                 #Get std
-                if gradeNormal.mu is not NaN:    
+                if not isnan(gradeNormal.mu):
                     for p in result.index.values:
                         tmp = persona_rating[p][u] 
-                        if tmp is not NaN:
+                        if not isnan(tmp):
                             dist += (tmp - gradeNormal.mu)**2
 
                     if count > 0:
                         gradeNormal.sd = sqrt(dist/count) 
 
-                if gradeNormal.mu is not NaN:
-                    utility_matrix[i][u] = gradeNormal.getGrade(min, max)
+                if not isnan(gradeNormal.mu):
+                    utility_matrix[q][u] = gradeNormal.getGrade(min, max)
                 else:
-                    utility_matrix[i][u] = NaN
+                    nNaN["cells"] += 1
+                    NaNInCol += 1
+                    NaNInRows[i] += 1
+                i += 1
 
-    print(countc)
+            if NaNInCol == utility_matrix.index.size: nNaN["columns"] += 1
+
+    nNaN["rows"] = NaNInRows.count(utility_matrix.columns.size)
+    return nNaN
 
 def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, users: Users, percentToDelete: int):
 
@@ -93,16 +99,16 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
     deletedColumns = False
     
     #Get how many elements to delete and how many to keep
-    nDelete =  int((percentToDelete * tot) / 100) #nDelete=10 
+    nDelete =  round((percentToDelete * tot) / 100) #nDelete=10
 
     #Get the number of columns to set to Nan
-    nRowsDelete =  int((20 * num_users) / 100) #=2
+    nRowsDelete =  round((20 * num_users) / 100) #=2
     if nDelete > nRowsDelete * num_queries:
         nDelete -= nRowsDelete * num_queries   #-1
         deletedRows = True
 
     #Get the number of rows to set to Nan
-    nColDelete = int((20 * num_queries) / 100) #=2
+    nColDelete = round((20 * num_queries) / 100) #=2
     if nDelete > nColDelete * num_users:
         nDelete -= nColDelete * num_users          #nDelete = 70 - (2*10) = 50
         deletedColumns =True
@@ -110,7 +116,7 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
     if deletedColumns and deletedRows:
         nDelete += nRowsDelete * nColDelete #Crossing cells
 
-    nKeep = tot - nDelete   
+    nKeep = tot - nDelete
 
     #Get cartesian product of users and queries
     lists= [users_list, queries_list]
@@ -122,7 +128,7 @@ def removeValuesUtilityMatrix(utiliy_matrix: UtilityMatrix, queries: Queries, us
     if deletedRows:
         random.shuffle(users_list)
 
-        userIds = set() 
+        userIds = set()
 
         for i in range(nRowsDelete):
             userIds.add(users_list[i])
