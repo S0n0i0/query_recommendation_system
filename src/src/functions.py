@@ -2,7 +2,6 @@ import random
 import re
 from data_struct import *
 from math import sqrt
-import itertools
 
 def strWithoutChar(fnSource,toReplace: str,value: str = " "):
     """Generation of a string from fnSource where value is put in place of substring found by regex toReplace"""

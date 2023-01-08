@@ -5,16 +5,27 @@ import pandas as pd
 import random
 from faker import Faker
 from numpy import NaN
-from math import sqrt
+
+'''
+Cose da sistemare:
+Rendere più veloce
+Fare generazione sensata people
+Fare generazione sensata queries (pesi diversi query,casi particolari NaN su colonne)
+
+Controllare creazione persona_rating
+Rendere titoli (age,id,...) a parte rispetto a data
+usare metodi di pandas (es. isin)
+Sistemare NaN e None
+'''
 
 # initialize Faker
 fake = Faker(['it_IT', 'en_US'])
 
 # Configuration
 # number of users, people and queries
-num_users = 10
-num_people = 10
-num_queries = 10
+num_users = 300
+num_people = 300
+num_queries = 300
 # user profiles informations
 usersToNaN = 0 #Fraction (range of [0,1]) of users that has pose no query
 preferences = {
@@ -39,10 +50,17 @@ average_grades = [Normal(50, 5)] #Gaussian normals, ordered by mean, that define
 min_grade = 0 #Min grade possible
 max_grade = 100 #Max grade possible
 #Queries
-queriesWeights = [1,0,5] #Weights for queries: query with [elements existing in people, random new elements, not present in the query]
+queriesWeights = { #Weights for queries: query with [elements existing in people, random new elements, not present in the query]
+    "id": [1,0,15],
+    "name": [2,0,5],
+    "surname": [1,0,1],
+    "city": [1,0,1],
+    "age": [1,0,1],
+    "occupation": [2,0,5]
+}
 queriesToNaN = 0 #Fraction (range of [0,1]) of query posed by nobody
 #Utility matrix
-sparsity = 0.9 #Fraction (range of [0,1]) of elements to remove
+sparsity = 0.6 #Fraction (range of [0,1]) of elements to remove
 #Various
 special_char_regex = "(\\n|,|\'|\")" #Special character to remove from random strings
 base_files_path = "../data/" #Base path of CSVs
@@ -52,7 +70,7 @@ base_files_path = "../data/" #Base path of CSVs
 people = People(pd.DataFrame({'id': ['p{}'.format(i) for i in range(num_people)],  # Rimettere 'id' come index in caso si voglia tornare in quel modo
                               'name': [fake.first_name() for _ in range(num_people)],
                               'surname': [fake.last_name() for _ in range(num_people)],
-                              'address': [strWithoutChar(fake.city, special_char_regex) for _ in range(num_people)],
+                              'city': [strWithoutChar(fake.city, special_char_regex) for _ in range(num_people)],
                               'age': [random.randint(10, 90) for _ in range(num_people)],
                               'occupation': [strWithoutChar(fake.job, special_char_regex) for _ in range(num_people)]}))
 
@@ -62,22 +80,22 @@ users = Users(pd.Series(['u{}'.format(i) for i in range(num_users)]))
 
 
 # Create a dataframe for the queries
-queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'), rndFormattedInt, [num_queries, num_queries*2, "p{}"], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
-                                'name': [randomElement(people.getColumnSubset('name'), fake.first_name, alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
-                                'surname': [randomElement(people.getColumnSubset('name'), fake.last_name, alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
-                                'address': [randomElement(people.getColumnSubset('address'), strWithoutChar, [fake.city, special_char_regex], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
-                                'age': [randomElement(people.getColumnSubset('age'), random.randint, [10, 90], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)],
-                                'occupation': [randomElement(people.getColumnSubset('occupation'), strWithoutChar, [fake.job, special_char_regex], alsoNaN=True, weights=queriesWeights) for _ in range(num_queries)]},
+queries = Queries(pd.DataFrame({'id': [randomElement(people.getColumnSubset('id'), rndFormattedInt, [num_queries, num_queries*2, "p{}"], alsoNaN=True, weights=queriesWeights['id']) for _ in range(num_queries)],
+                                'name': [randomElement(people.getColumnSubset('name'), fake.first_name, alsoNaN=True, weights=queriesWeights['name']) for _ in range(num_queries)],
+                                'surname': [randomElement(people.getColumnSubset('surname'), fake.last_name, alsoNaN=True, weights=queriesWeights['surname']) for _ in range(num_queries)],
+                                'city': [randomElement(people.getColumnSubset('city'), strWithoutChar, [fake.city, special_char_regex], alsoNaN=True, weights=queriesWeights['city']) for _ in range(num_queries)],
+                                'age': [randomElement(people.getColumnSubset('age'), random.randint, [10, 90], alsoNaN=True, weights=queriesWeights['age']) for _ in range(num_queries)],
+                                'occupation': [randomElement(people.getColumnSubset('occupation'), strWithoutChar, [fake.job, special_char_regex], alsoNaN=True, weights=queriesWeights['occupation']) for _ in range(num_queries)]},
                                ['q{}'.format(i) for i in range(num_queries)]))
 
 
 # Save people, users and queries to CSV files
 people.toCsv(base_files_path + "people.csv")
-print("People file generated")
+print("[ People file generated ]")
 users.toCsv(base_files_path + "users.csv")
-print("Users file generated")
+print("[ Users file generated ]")
 queries.toCsv(base_files_path + "queries.csv")
-print("Queries file generated")
+print("[ Queries file generated ]")
 
 
 # Create profiles for users that has posed some queries
@@ -91,6 +109,7 @@ for i in users.values:
                                   Conditions(Normal(random.uniform(disinterests['minMu'], disinterests['maxMu']), random.uniform(disinterests['minSd'], disinterests['maxSd'])),
                                              elementsProp=disinterests['elementFrac'], randomLen=disinterests['randomLen'], specialCases=disinterests['everyone']),
                                   average_grades)
+print("Users profiles generated")
 
 
 # Create a dataframe for users's rating of people
@@ -98,6 +117,7 @@ tmp_persona_rating = []
 persona_rating = pd.DataFrame([[usersProfile[i].getGrade(people.iloc[j], min_grade, max_grade) for j in people.index] for i in usersProfile],
                                 users.values, people.index)
 del usersProfile
+print("Persona-Rating table generated")
 
 # Remove queries that nobody pose
 queries = Queries(queries.sample(frac=1-queriesToNaN))
@@ -112,4 +132,4 @@ removeValuesUtilityMatrix(utility_matrix, cellCoordinates, sparsity)
 
 # Save utility matrix to CSV files
 utility_matrix.toCsv(base_files_path + "utility_matrix.csv")
-print("Utility matrix file generated")
+print("[ Utility matrix file generated ]")
